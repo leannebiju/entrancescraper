@@ -1,147 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Entrance Exam Updates</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Entrance Exam Updates</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
 </head>
 <body class="bg-gradient-to-br from-blue-100 to-purple-100 min-h-screen p-8">
-    <div class="max-w-3xl mx-auto text-center">
-        <h1 class="text-4xl font-bold mb-6 text-blue-900">Entrance Exam Notifications</h1>
+  <div class="max-w-3xl mx-auto text-center">
+    <h1 class="text-4xl font-bold mb-6 text-blue-900">Entrance Exam Notifications</h1>
 
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
-            <select id="examSelect" class="p-3 rounded-xl border border-blue-300 shadow-md w-60">
-                <option value="neet">NEET</option>
-                <option value="keam">KEAM</option>
-                <option value="mhtcet">MHT-CET</option>
-                <option value="tnmedical">TN Medical</option>
-                <option value="karnataka">Karnataka CET</option>
-            </select>
-            <button onclick="fetchUpdates()" id="fetchBtn" class="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition">
-                Get Updates
-            </button>
-        </div>
-
-        <div id="status" class="text-gray-600 text-sm mb-4"></div>
-
-        <ul id="updatesList" class="grid gap-4"></ul>
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
+      <select id="examSelect" class="p-3 rounded-xl border border-blue-300 shadow-md w-60">
+        <option value="neet">NEET</option>
+        <option value="keam">KEAM</option>
+        <option value="mhtcet">MHT-CET</option>
+        <option value="tnmedical">TN Medical</option>
+        <option value="karnataka">Karnataka CET</option>
+      </select>
+      <button onclick="fetchUpdates()" id="fetchBtn" class="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition">
+        Get Updates
+      </button>
     </div>
 
-    <script>
-        const examMainUrls = {
-            neet: "https://neet.nta.nic.in",
-            keam: "https://cee.kerala.gov.in/keam",
-            mhtcet: "https://mhtcet2025.mahacet.org",
-            tnmedical: "https://www.tnmedicalselection.net",
-            karnataka: "https://kea.kar.nic.in"
-        };
+    <div id="status" class="text-gray-600 text-sm mb-4 h-6"></div>
 
-        // Load seen notifications from localStorage or empty array
-        function getSeenNotifications() {
-            try {
-                return JSON.parse(localStorage.getItem("seenNotifications") || "[]");
-            } catch {
-                return [];
+    <ul id="updatesList" class="grid gap-4"></ul>
+  </div>
+
+  <script>
+    const examMainUrls = {
+      neet: "https://neet.nta.nic.in",
+      keam: "https://cee.kerala.gov.in/keam",
+      mhtcet: "https://mhtcet2025.mahacet.org",
+      tnmedical: "https://www.tnmedicalselection.net",
+      karnataka: "https://kea.kar.nic.in"
+    };
+
+    function getSeenNotifications() {
+      try {
+        return JSON.parse(localStorage.getItem("seenNotifications") || "[]");
+      } catch {
+        return [];
+      }
+    }
+
+    function saveSeenNotifications(seen) {
+      localStorage.setItem("seenNotifications", JSON.stringify(seen));
+    }
+
+    let dotsInterval;  // global variable to hold interval ID
+
+    async function fetchUpdates() {
+      const currentYear = new Date().getFullYear();
+      const exam = document.getElementById("examSelect").value;
+      const btn = document.getElementById("fetchBtn");
+      const status = document.getElementById("status");
+      const list = document.getElementById("updatesList");
+
+      list.innerHTML = "";
+
+      // Show loading text with animated dots
+      status.innerHTML = `
+        <div class="text-blue-700 font-semibold">
+          Loading updates<span id="dots"></span>
+        </div>`;
+
+      let dots = 0;
+      dotsInterval = setInterval(() => {
+        dots = (dots + 1) % 4; // cycles 0 to 3 dots
+        const dotsSpan = document.getElementById('dots');
+        if (dotsSpan) {
+          dotsSpan.textContent = '.'.repeat(dots);
+        }
+      }, 500);
+
+      btn.disabled = true;
+      btn.textContent = "Loading...";
+
+      const seenNotifs = getSeenNotifications();
+
+      try {
+        const res = await fetch(`/get-updates?exam=${exam}`);
+        if (!res.ok) throw new Error("Network response was not ok");
+        const data = await res.json();
+
+        const filtered = data.filter(item =>
+          item.includes(currentYear.toString()) &&
+          !item.includes(`${currentYear - 1}`) &&
+          !item.includes(`${currentYear - 1}-${currentYear}`)
+        );
+
+        if (filtered.length === 0) {
+          list.innerHTML = `<li class="text-gray-700">No notifications found for ${currentYear}.</li>`;
+        } else {
+          filtered.forEach(update => {
+            const urlMatch = update.match(/https?:\/\/[^\s)]+/);
+            const li = document.createElement("li");
+            li.className = "bg-white p-4 rounded-2xl shadow-md text-left hover:bg-blue-50 cursor-pointer break-words flex justify-between items-center";
+
+            const linkUrl = urlMatch ? urlMatch[0] : examMainUrls[exam];
+            const text = urlMatch ? update.replace(linkUrl, '').trim() : update;
+            const isNew = !seenNotifs.includes(update);
+
+            if (isNew) {
+              li.classList.add("bg-green-100");
             }
-        }
 
-        // Save seen notifications to localStorage
-        function saveSeenNotifications(seen) {
-            localStorage.setItem("seenNotifications", JSON.stringify(seen));
-        }
+            const textSpan = document.createElement("span");
+            textSpan.textContent = text || linkUrl;
+            textSpan.className = isNew ? "font-semibold text-green-800" : "";
 
-        async function fetchUpdates() {
-            const currentYear = new Date().getFullYear();
-            const exam = document.getElementById("examSelect").value;
-            const btn = document.getElementById("fetchBtn");
-            const status = document.getElementById("status");
-            const list = document.getElementById("updatesList");
+            li.appendChild(textSpan);
 
-            list.innerHTML = "";
-            status.textContent = "Loading updates...";
-            btn.disabled = true;
-            btn.textContent = "Loading...";
+            if (isNew) {
+              const newBadge = document.createElement("span");
+              newBadge.textContent = "NEW";
+              newBadge.className = "ml-4 bg-green-600 text-white text-xs font-bold px-2 py-0.5 rounded-full";
+              li.appendChild(newBadge);
+            }
 
-            const seenNotifs = getSeenNotifications();
-
-            try {
-                const res = await fetch(`/get-updates?exam=${exam}`);
-                const data = await res.json();
-
-                const filtered = data.filter(item => {
-                    return item.includes("2025") && !item.includes("2024-2025") && !item.includes("2024");
-                });
-
-                if (filtered.length === 0) {
-                    list.innerHTML = `<li class="text-gray-700">No notifications found for ${currentYear}.</li>`;
-                } else {
-                    filtered.forEach(update => {
-                        const urlMatch = update.match(/https?:\/\/[^\s)]+/);
-                        const li = document.createElement("li");
-                        li.className = "bg-white p-4 rounded-2xl shadow-md text-left hover:bg-blue-50 cursor-pointer break-words flex justify-between items-center";
-
-                        let linkUrl;
-                        if (urlMatch) {
-                            linkUrl = urlMatch[0];
-                        } else {
-                            linkUrl = examMainUrls[exam];
-                        }
-
-                        const text = urlMatch ? update.replace(linkUrl, '').trim() : update;
-
-                        const isNew = !seenNotifs.includes(update);
-
-                        if (isNew) {
-                            li.classList.add("bg-green-100");
-                        }
-
-                        const textSpan = document.createElement("span");
-                        textSpan.textContent = text || linkUrl;
-                        textSpan.className = isNew ? "font-semibold text-green-800" : "";
-
-                        // PDF icon if pdf link
-                        if (linkUrl.toLowerCase().endsWith(".pdf")) {
-                            const pdfIcon = document.createElement("span");
-                            pdfIcon.textContent = " 📄";
-                            textSpan.appendChild(pdfIcon);
-                        }
-
-                        li.appendChild(textSpan);
-
-                        if (isNew) {
-                            const newBadge = document.createElement("span");
-                            newBadge.textContent = "NEW";
-                            newBadge.className = "ml-4 bg-green-600 text-white text-xs font-bold px-2 py-0.5 rounded-full";
-                            li.appendChild(newBadge);
-                        }
-
-                        li.onclick = () => {
-                            // Mark as seen
-                            if (isNew) {
-                                seenNotifs.push(update);
-                                saveSeenNotifications(seenNotifs);
-                                li.classList.remove("bg-green-100");
-                                if (li.lastChild && li.lastChild.textContent === "NEW") {
-                                    li.removeChild(li.lastChild);
-                                }
-                                textSpan.classList.remove("font-semibold", "text-green-800");
-                            }
-                            window.open(linkUrl, "_blank", "noopener");
-                        };
-
-                        list.appendChild(li);
-                    });
+            li.onclick = () => {
+              if (isNew) {
+                seenNotifs.push(update);
+                saveSeenNotifications(seenNotifs);
+                li.classList.remove("bg-green-100");
+                if (li.lastChild && li.lastChild.textContent === "NEW") {
+                  li.removeChild(li.lastChild);
                 }
-            } catch (err) {
-                console.error(err);
-                status.textContent = "Failed to load updates.";
-            } finally {
-                status.textContent = "";
-                btn.disabled = false;
-                btn.textContent = "Get Updates";
-            }
+                textSpan.classList.remove("font-semibold", "text-green-800");
+              }
+              window.open(linkUrl, "_blank", "noopener");
+            };
+
+            list.appendChild(li);
+          });
         }
-    </script>
+      } catch (err) {
+        console.error(err);
+        status.textContent = "Failed to load updates.";
+      } finally {
+        clearInterval(dotsInterval);  // stop dots animation
+        status.textContent = "";
+        btn.disabled = false;
+        btn.textContent = "Get Updates";
+      }
+    }
+  </script>
 </body>
 </html>
