@@ -92,7 +92,7 @@
         );
 
         if (filtered.length === 0) {
-          list.innerHTML = `<li class="text-gray-700">No notifications found for ${currentYear}.</li>`;
+          list.innerHTML = `<li class="text-gray-700">No notifications found.</li>`;
         } else {
           filtered.forEach(update => {
             const urlMatch = update.match(/https?:\/\/[^\s)]+/);
