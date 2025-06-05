@@ -18,7 +18,7 @@ def fetch_tnmedical_updates():
 
     for tag in soup.find_all("li"):
         text = tag.get_text(strip=True)
-        if any(keyword in text.lower() for keyword in ["tn","medical", "admit card", "result", "counselling", "exam"]):
+        if any(keyword in text.lower() for keyword in ["tn","medical","score","admit card", "result", "counselling", "exam"]):
             norm_text = normalize(text)
             if not any(is_similar(norm_text, normalize(s)) for s in seen):
                 seen.append(text)

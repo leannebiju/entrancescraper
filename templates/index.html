@@ -49,7 +49,7 @@
       localStorage.setItem("seenNotifications", JSON.stringify(seen));
     }
 
-    let dotsInterval;  // global variable to hold interval ID
+    let dotsInterval;  
 
     async function fetchUpdates() {
       const currentYear = new Date().getFullYear();
@@ -60,7 +60,6 @@
 
       list.innerHTML = "";
 
-      // Show loading text with animated dots
       status.innerHTML = `
         <div class="text-blue-700 font-semibold">
           Loading updates<span id="dots"></span>
@@ -68,7 +67,7 @@
 
       let dots = 0;
       dotsInterval = setInterval(() => {
-        dots = (dots + 1) % 4; // cycles 0 to 3 dots
+        dots = (dots + 1) % 4; 
         const dotsSpan = document.getElementById('dots');
         if (dotsSpan) {
           dotsSpan.textContent = '.'.repeat(dots);
@@ -140,7 +139,7 @@
         console.error(err);
         status.textContent = "Failed to load updates.";
       } finally {
-        clearInterval(dotsInterval);  // stop dots animation
+        clearInterval(dotsInterval);  
         status.textContent = "";
         btn.disabled = false;
         btn.textContent = "Get Updates";

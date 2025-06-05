@@ -18,7 +18,7 @@ def fetch_keam_updates():
 
     for li in soup.select("marquee li, ul li"):
         text = li.get_text(strip=True)
-        if any(keyword in text.lower() for keyword in ["keam", "admit card", "result", "exam", "counselling"]):
+        if any(keyword in text.lower() for keyword in ["keam", "admit card", "score","result", "exam", "counselling"]):
             norm_text = normalize(text)
             if not any(is_similar(norm_text, normalize(existing)) for existing in seen):
                 seen.append(text)
